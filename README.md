@@ -1,5 +1,7 @@
 # 🎓 Google Apps Script 授權與 Web App 公開部署完全教學手冊（新手學生版）
 
+[English](https://github.com/nutcelvischen-jpg/appscript_skill/tree/en) | **繁體中文**
+
 > 本專案提供完整的 **Google Apps Script (GAS) 授權機制解析**、**網頁打卡系統實作**、**常見錯誤排除 (Troubleshooting)** 與 **AI / CLI 自動化發布技術**。
 > 特別適合程式新手、大專院校資訊課程、工作坊學生學習 Google 雲端自動化與 Web App 開發！
 
