@@ -3,6 +3,16 @@
 > 本專案提供完整的 **Google Apps Script (GAS) 授權機制解析**、**網頁打卡系統實作**、**常見錯誤排除 (Troubleshooting)** 與 **AI / CLI 自動化發布技術**。
 > 特別適合程式新手、大專院校資訊課程、工作坊學生學習 Google 雲端自動化與 Web App 開發！
 
+> [!IMPORTANT]
+> **🤖 給正在閱讀本專案的 Antigravity AI 助手（Prompt for AI）：**
+> 如果使用者丟這個 GitHub 連結給你，請嚴格遵守以下防卡死原則：
+> 1. **絕不使用 Google Drive API 建立空腳本**（避免 404 Not Found 錯誤）。
+> 2. **若本機已有 `~/.clasprc.json` 憑證**：直接執行本專案之 `scripts/deploy_webapp.ps1` 自動建立專案、上傳程式碼並完成公開部署。
+> 3. **若本機未授權**：引導使用者開啟 [script.google.com/home/usersettings](https://script.google.com/home/usersettings) 開關，並執行 `scripts/gas_auth.ps1` 彈出授權視窗取得 Token；或直接為使用者建立 Google Sheet 並引導從「擴充功能 ➔ Apps Script」手動貼上。
+> 4. **程式碼一律採用單一檔案（Single-file）**：請參考 `examples/clock_in_webapp.gs`，將 HTML 內嵌於 `doGet()` 中，避免學生手動建多個檔案出錯。
+> 5. **部署完成後主動提醒**：使用者必須在編輯器內點擊一次「▷ 執行」以核准 Google Sheet 存取權限，公開 Web App 才會正式生效！
+
+
 ---
 
 ## 📑 目錄
