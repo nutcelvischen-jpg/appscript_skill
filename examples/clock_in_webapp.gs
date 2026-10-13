@@ -1,46 +1,46 @@
 /**
  * ====================================================================
- * 🕒 員工上下班打卡網頁系統 (Google Apps Script 單一檔案完整版)
+ * 🕒 Staff clock-in / clock-out web app (Google Apps Script, single-file edition)
  * ====================================================================
- * 後端 Google Sheet 已自動建立並綁定：
- * 試算表名稱：員工上班打卡紀錄表
- * 試算表網址：https://docs.google.com/spreadsheets/d/1R0ebkEe-XHL-KWfoAc6Sm7QknuPqQI54ZO_Q__ixaRU/edit
+ * Back end: a Google Sheet (for example "Staff Clock-in Log").
+ * Put its ID in CONFIG.SPREADSHEET_ID below. The ID is the part of the Sheet URL between /d/ and /edit:
+ * https://docs.google.com/spreadsheets/d/[SPREADSHEET_ID]/edit
  *
- * 【公開部署步驟】
- * 1. 將本檔案全部內容貼入 Google Apps Script 的「程式碼.gs」中，按 Ctrl + S 儲存
- * 2. 點擊右上角「部署 (Deploy)」➔「新增部署作業 (New deployment)」
- * 3. 左上角齒輪「選取類型」選擇「網頁應用程式 (Web app)」
- * 4. 設定如下：
- *    - 說明：員工打卡系統 v1
- *    - 執行身分 (Execute as)：「我 (Me)」
- *    - 誰可以存取 (Who has access)：「所有人 (Anyone)」(公開部署必選！)
- * 5. 點擊「部署 (Deploy)」，首次部署請點擊「授予存取權」完成 Google 帳號授權
- * 6. 複製產生的「網頁應用程式網址 (Web app URL)」即可分享給所有人打卡！
+ * [Public deployment steps]
+ * 1. Paste this whole file into "Code.gs" in Google Apps Script and press Ctrl + S to save
+ * 2. Click "Deploy" ➔ "New deployment" at the top right
+ * 3. Click the gear next to "Select type" and choose "Web app"
+ * 4. Settings:
+ *    - Description: Staff clock-in v1
+ *    - Execute as: "Me"
+ *    - Who has access: "Anyone" (required for a public deployment!)
+ * 5. Click "Deploy"; on the first deployment click "Authorize access" to grant your Google account permission
+ * 6. Copy the "Web app URL" and share it with everyone who needs to clock in!
  */
 
 const CONFIG = {
-  SPREADSHEET_ID: '1R0ebkEe-XHL-KWfoAc6Sm7QknuPqQI54ZO_Q__ixaRU',
-  SHEET_NAME: '打卡紀錄',
-  TIMEZONE: 'Asia/Taipei',
+  SPREADSHEET_ID: 'PASTE_YOUR_SPREADSHEET_ID_HERE',
+  SHEET_NAME: 'Clock-ins',
+  TIMEZONE: 'Asia/Taipei',   // change to your time zone, e.g. 'Europe/London'
 };
 
 /**
- * 網頁入口：當使用者開啟公開部署網址時顯示打卡網頁
+ * Web entry point: shows the clock-in page when someone opens the public URL
  */
 function doGet(e) {
   return HtmlService.createHtmlOutput(getHtmlContent_())
-    .setTitle('員工線上打卡系統')
+    .setTitle('Staff Clock-in')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1');
 }
 
 /**
- * 接收前端打卡請求並寫入 Google Sheet
+ * Receives a clock-in request from the page and writes it to the Google Sheet
  * @param {Object} payload - { name: string, type: string, note: string }
  */
 function submitClockIn(payload) {
   if (!payload || !payload.name || String(payload.name).trim() === '') {
-    throw new Error('請輸入您的姓名！');
+    throw new Error('Please enter your name!');
   }
 
   const lock = LockService.getScriptLock();
@@ -51,10 +51,10 @@ function submitClockIn(payload) {
     const now = new Date();
     const formattedTime = Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
     const cleanName = String(payload.name).trim();
-    const clockType = payload.type ? String(payload.type).trim() : '上班打卡';
+    const clockType = payload.type ? String(payload.type).trim() : 'Clock in';
     const note = payload.note ? String(payload.note).trim() : '';
 
-    // 寫入一列：[姓名, 打卡時間, 打卡類型, 備註]
+    // Append one row: [Name, Time, Type, Note]
     sheet.appendRow([cleanName, formattedTime, clockType, note]);
 
     return {
@@ -71,7 +71,7 @@ function submitClockIn(payload) {
 }
 
 /**
- * 讀取最近 N 筆打卡紀錄供前端即時顯示
+ * Reads the latest N clock-ins for the page to display
  */
 function getRecentRecords(limit) {
   const maxRows = limit || 10;
@@ -86,7 +86,7 @@ function getRecentRecords(limit) {
   const numRows = lastRow - startRow + 1;
   const values = sheet.getRange(startRow, 1, numRows, 4).getDisplayValues();
 
-  // 由最新到最舊排序
+  // newest first
   return values.reverse().map(function (row) {
     return {
       name: row[0] || '',
@@ -98,7 +98,7 @@ function getRecentRecords(limit) {
 }
 
 /**
- * 取得或初始化「打卡紀錄」工作表
+ * Gets or initializes the clock-in sheet
  */
 function getOrCreateSheet_() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -113,7 +113,7 @@ function getOrCreateSheet_() {
   }
 
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['姓名', '打卡時間', '打卡類型', '備註']);
+    sheet.appendRow(['Name', 'Time', 'Type', 'Note']);
     sheet.getRange('A1:D1').setFontWeight('bold').setBackground('#1E3A8A').setFontColor('#FFFFFF');
     sheet.setFrozenRows(1);
   }
@@ -121,26 +121,26 @@ function getOrCreateSheet_() {
 }
 
 /**
- * 測試與授權專用函式（可在編輯器上方直接點「執行」測試寫入一筆打卡）
+ * Test / authorization helper (choose it in the editor and click Run to write one test clock-in)
  */
 function testClockIn() {
   const res = submitClockIn({
-    name: '測試人員 (系統連線測試)',
-    type: '上班打卡',
-    note: 'Apps Script 授權與連線測試成功',
+    name: 'Test User (connection test)',
+    type: 'Clock in',
+    note: 'Apps Script authorization and connection test OK',
   });
-  console.log('✅ 打卡寫入成功！', JSON.stringify(res));
+  console.log('✅ Clock-in saved!', JSON.stringify(res));
 }
 
 /**
- * 前端完整 HTML + CSS + JS 介面（單一檔案內嵌，免另外建立 HTML 檔）
+ * Full front end: HTML + CSS + JS embedded in this single file (no separate HTML file needed)
  */
 function getHtmlContent_() {
   return `<!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>員工線上打卡系統</title>
+  <title>Staff Clock-in</title>
   <style>
     :root {
       --primary: #2563eb;
@@ -159,7 +159,7 @@ function getHtmlContent_() {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft JhengHei", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     body {
       background: linear-gradient(135deg, #e0e7ff 0%, #f1f5f9 100%);
@@ -361,31 +361,31 @@ function getHtmlContent_() {
 <body>
   <div class="container">
     <div class="header">
-      <span class="badge">Google Sheets 即時連線</span>
-      <h1>🕒 員工線上打卡系統</h1>
+      <span class="badge">Live Google Sheets connection</span>
+      <h1>🕒 Staff Clock-in</h1>
     </div>
 
     <div class="clock-box">
-      <div class="clock-date" id="clockDate">載入日期中...</div>
+      <div class="clock-date" id="clockDate">Loading date...</div>
       <div class="clock-time" id="clockTime">00:00:00</div>
     </div>
 
     <div class="form-group">
-      <label for="empName">員工姓名 <span style="color:#ef4444">*</span></label>
-      <input type="text" id="empName" placeholder="請輸入您的姓名（例如：王小明）" autocomplete="name">
+      <label for="empName">Your name <span style="color:#ef4444">*</span></label>
+      <input type="text" id="empName" placeholder="Enter your name (e.g. Alex Wang)" autocomplete="name">
     </div>
 
     <div class="form-group">
-      <label for="empNote">打卡備註（選填）</label>
-      <input type="text" id="empNote" placeholder="例如：正常出勤、居家辦公、外勤拜訪">
+      <label for="empNote">Note (optional)</label>
+      <input type="text" id="empNote" placeholder="e.g. In office, working from home, client visit">
     </div>
 
     <div class="btn-group">
-      <button type="button" class="btn-in" id="btnClockIn" onclick="handleClock('上班打卡')">
-        ☀️ 上班打卡
+      <button type="button" class="btn-in" id="btnClockIn" onclick="handleClock('Clock in')">
+        ☀️ Clock in
       </button>
-      <button type="button" class="btn-out" id="btnClockOut" onclick="handleClock('下班打卡')">
-        🌙 下班打卡
+      <button type="button" class="btn-out" id="btnClockOut" onclick="handleClock('Clock out')">
+        🌙 Clock out
       </button>
     </div>
 
@@ -393,29 +393,29 @@ function getHtmlContent_() {
 
     <div class="history-section">
       <div class="history-header">
-        <h2>📋 最新打卡紀錄（前 10 筆）</h2>
-        <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/edit" target="_blank">開啟後端 Google Sheet ↗</a>
+        <h2>📋 Latest clock-ins (last 10)</h2>
+        <a class="sheet-link" href="https://docs.google.com/spreadsheets/d/${CONFIG.SPREADSHEET_ID}/edit" target="_blank">Open the Google Sheet ↗</a>
       </div>
       <table>
         <thead>
           <tr>
-            <th>姓名</th>
-            <th>打卡時間</th>
-            <th>類型</th>
+            <th>Name</th>
+            <th>Time</th>
+            <th>Type</th>
           </tr>
         </thead>
         <tbody id="recordsBody">
-          <tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px;">讀取紀錄中...</td></tr>
+          <tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px;">Loading records...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 
   <script>
-    // 1. 即時時鐘更新
+    // 1. Live clock
     function updateClock() {
       const now = new Date();
-      const days = ['日', '一', '二', '三', '四', '五', '六'];
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const y = now.getFullYear();
       const m = String(now.getMonth() + 1).padStart(2, '0');
       const d = String(now.getDate()).padStart(2, '0');
@@ -424,13 +424,13 @@ function getHtmlContent_() {
       const mm = String(now.getMinutes()).padStart(2, '0');
       const ss = String(now.getSeconds()).padStart(2, '0');
 
-      document.getElementById('clockDate').textContent = y + ' 年 ' + m + ' 月 ' + d + ' 日（星期' + day + '）';
+      document.getElementById('clockDate').textContent = day + ', ' + y + '-' + m + '-' + d;
       document.getElementById('clockTime').textContent = hh + ':' + mm + ':' + ss;
     }
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. 自動帶入上次儲存的姓名
+    // 2. Pre-fill the name saved last time
     window.addEventListener('DOMContentLoaded', function() {
       const savedName = localStorage.getItem('gas_clockin_name');
       if (savedName) {
@@ -439,7 +439,7 @@ function getHtmlContent_() {
       loadRecentRecords();
     });
 
-    // 3. 送出打卡
+    // 3. Submit a clock-in
     function handleClock(clockType) {
       const nameInput = document.getElementById('empName');
       const noteInput = document.getElementById('empNote');
@@ -447,44 +447,44 @@ function getHtmlContent_() {
       const note = noteInput.value.trim();
 
       if (!name) {
-        showStatus('⚠️ 請先輸入您的「員工姓名」再點擊打卡！', true);
+        showStatus('⚠️ Please enter your name before clocking in!', true);
         nameInput.focus();
         return;
       }
 
-      // 記住姓名方便下次打卡
+      // remember the name for next time
       localStorage.setItem('gas_clockin_name', name);
 
       setButtonsDisabled(true);
-      showStatus('⏳ 正在寫入 Google Sheet 打卡紀錄中，請稍候...', false);
+      showStatus('⏳ Saving to the Google Sheet, please wait...', false);
 
       google.script.run
         .withSuccessHandler(function(res) {
           setButtonsDisabled(false);
           noteInput.value = '';
           showStatus(
-            '✅ <strong>' + escapeHtml(res.type) + '成功！</strong><br>' +
-            '👤 姓名：' + escapeHtml(res.name) + '<br>' +
-            '🕒 時間：' + escapeHtml(res.timestamp),
+            '✅ <strong>' + escapeHtml(res.type) + ' saved!</strong><br>' +
+            '👤 Name: ' + escapeHtml(res.name) + '<br>' +
+            '🕒 Time: ' + escapeHtml(res.timestamp),
             false
           );
           renderRecords(res.records || []);
         })
         .withFailureHandler(function(err) {
           setButtonsDisabled(false);
-          showStatus('❌ 打卡失敗：' + (err && err.message ? err.message : err), true);
+          showStatus('❌ Clock-in failed: ' + (err && err.message ? err.message : err), true);
         })
         .submitClockIn({ name: name, type: clockType, note: note });
     }
 
-    // 4. 載入最新打卡紀錄
+    // 4. Load the latest clock-ins
     function loadRecentRecords() {
       if (typeof google === 'undefined' || !google.script) return;
       google.script.run
         .withSuccessHandler(renderRecords)
         .withFailureHandler(function() {
           document.getElementById('recordsBody').innerHTML =
-            '<tr><td colspan="3" style="text-align:center;color:#94a3b8;">尚無紀錄或讀取失敗</td></tr>';
+            '<tr><td colspan="3" style="text-align:center;color:#94a3b8;">No records yet, or loading failed</td></tr>';
         })
         .getRecentRecords(10);
     }
@@ -492,16 +492,16 @@ function getHtmlContent_() {
     function renderRecords(records) {
       const tbody = document.getElementById('recordsBody');
       if (!records || records.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px;">目前尚無打卡紀錄</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px;">No clock-ins yet</td></tr>';
         return;
       }
       tbody.innerHTML = records.map(function(r) {
-        const isOut = r.type && r.type.indexOf('下班') !== -1;
+        const isOut = r.type && r.type.toLowerCase().indexOf('out') !== -1;
         const tagClass = isOut ? 'tag tag-out' : 'tag tag-in';
         return '<tr>' +
           '<td><strong>' + escapeHtml(r.name) + '</strong>' + (r.note ? '<div style="font-size:11px;color:#64748b;">' + escapeHtml(r.note) + '</div>' : '') + '</td>' +
           '<td style="font-variant-numeric:tabular-nums;">' + escapeHtml(r.timestamp) + '</td>' +
-          '<td><span class="' + tagClass + '">' + escapeHtml(r.type || '上班打卡') + '</span></td>' +
+          '<td><span class="' + tagClass + '">' + escapeHtml(r.type || 'Clock in') + '</span></td>' +
         '</tr>';
       }).join('');
     }

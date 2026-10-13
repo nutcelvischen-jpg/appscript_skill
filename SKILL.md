@@ -1,96 +1,96 @@
 ---
 name: google-apps-script-auth
-description: 當使用者要求連動 Google Apps Script (GAS)、建立打卡網頁、部署 Web App、或串接 Google 表單/試算表與 Apps Script 時必須使用。指導 AI 助手如何透過 OAuth 自動授權連線、建立專案、上傳程式碼並公開部署，同時防止 404 與授權卡死。
+description: Use whenever the user asks to connect to Google Apps Script (GAS), build a clock-in or other web page, deploy a Web App, or link Google Forms / Sheets with Apps Script. Guides the AI assistant through OAuth authorization, project creation, code upload and public deployment, while avoiding 404 errors and authorization dead-ends.
 ---
 
-# Google Apps Script (GAS) 自動連動與 Web App 部署指南（AI 助手運作守則）
+# Google Apps Script (GAS) integration and Web App deployment (operating rules for the AI assistant)
 
-本技能指導 AI 助手（Antigravity Agent）如何**正確、無死角、完全不卡死**地連動 Google Apps Script，並將程式碼部署為公開的網頁應用程式（Web App）。
-
----
-
-## 🛑 AI 助手防卡死三大鐵律 (CRITICAL RULES)
-
-1. **嚴禁使用 Google Drive API (`drive/v3/files`) 建立 `application/vnd.google-apps.script` 檔案！**
-   - ⚠️ 呼叫 Drive API 建立的 script 檔案只是 0 byte 索引空殼，點開**必定 404 Not Found**，會導致使用者與 AI 陷入除錯死循環。
-2. **建立專案的唯二合法管道：**
-   - **全自動 API 管道**：呼叫 `POST https://script.googleapis.com/v1/projects`（需帶入 `parentId` 綁定 Google Sheet）。
-   - **引導使用者管道**：請使用者打開 Google Sheet，點選上方選單 **「擴充功能」➔「Apps Script」**（容器內建立，絕不 404）。
-3. **強制採用單一檔案（Single-file）架構：**
-   - 不要要求使用者分別建立 `Code.gs` 與 `Index.html`。
-   - 將前端網頁完整內嵌於 `doGet()` 的 `HtmlService.createHtmlOutput(...)` 中，避免檔案遺失或大小寫打錯。
+This skill tells the AI assistant (Antigravity Agent) how to connect to Google Apps Script **correctly, completely and without getting stuck**, and how to deploy code as a public Web App.
 
 ---
 
-## 🤖 AI 助手執行決策樹 (Agent Decision Tree)
+## 🛑 Three rules to avoid getting stuck (CRITICAL RULES)
 
-當使用者說「幫我用 Google Apps Script 做一個網頁/打卡系統」時，AI 應依序執行以下判斷：
+1. **Never use the Google Drive API (`drive/v3/files`) to create an `application/vnd.google-apps.script` file!**
+   - ⚠️ A script file created through the Drive API is only a 0-byte index shell. Opening it **always returns 404 Not Found**, trapping the user and the AI in an endless debugging loop.
+2. **There are only two valid ways to create a project:**
+   - **Fully automatic API route**: call `POST https://script.googleapis.com/v1/projects` (with `parentId` to bind it to a Google Sheet).
+   - **Guided route**: have the user open the Google Sheet and choose **Extensions ➔ Apps Script** from the menu (created inside the container, never a 404).
+3. **Always use a single-file architecture:**
+   - Do not ask the user to create separate `Code.gs` and `Index.html` files.
+   - Embed the whole front end in `HtmlService.createHtmlOutput(...)` inside `doGet()`, so no file goes missing or gets its name capitalised wrongly.
+
+---
+
+## 🤖 Agent decision tree
+
+When the user says "build me a web page / clock-in system with Google Apps Script", the AI should decide as follows:
 
 ```mermaid
 flowchart TD
-    Start["使用者要求建立 Apps Script Web App"] --> CheckAuth{"檢查 ~/.clasprc.json 是否存在？"}
-    
-    CheckAuth -- "是 (已授權)" --> StepAuto["【全自動模式】<br>1. 呼叫 Apps Script API 建專案 (parentId 綁定 Sheet)<br>2. PUT 更新 Code.gs 與 appsscript.json<br>3. POST 建立 Version 1 並部署 Web App<br>4. 回傳公開網址並提醒點一次『▷ 執行』核准試算表權限"]
-    
-    CheckAuth -- "否 (未授權)" --> AskMode{"向使用者確認操作方式"}
-    
-    AskMode -- "推薦：AI 全自動處理" --> StepOAuth["【一鍵 OAuth 模式】<br>1. 提醒使用者開啟 script.google.com/home/usersettings API 開關<br>2. 執行 ./scripts/gas_auth.ps1 彈出瀏覽器授權<br>3. 取得 Token 存入 ~/.clasprc.json<br>4. 接續執行【全自動模式】"]
-    
-    AskMode -- "使用者想手動學習" --> StepManual["【新手純手動模式】<br>1. AI 幫忙建好 Google Sheet 並排好標題<br>2. 提供前後端合一的單一檔案程式碼<br>3. 指導學生從『擴充功能 ➔ Apps Script』貼上<br>4. 點擊『▷ 執行』授權並點『部署 ➔ 網頁應用程式』"]
+    Start["User asks for an Apps Script Web App"] --> CheckAuth{"Does ~/.clasprc.json exist?"}
+
+    CheckAuth -- "Yes (authorized)" --> StepAuto["[Fully automatic mode]<br>1. Call the Apps Script API to create the project (parentId binds the Sheet)<br>2. PUT Code.gs and appsscript.json<br>3. POST Version 1 and deploy the Web App<br>4. Return the public URL and remind the user to click Run once to approve Sheet access"]
+
+    CheckAuth -- "No (not authorized)" --> AskMode{"Ask the user how they want to proceed"}
+
+    AskMode -- "Recommended: let the AI do everything" --> StepOAuth["[One-click OAuth mode]<br>1. Remind the user to turn on the API switch at script.google.com/home/usersettings<br>2. Run ./scripts/gas_auth.ps1 to open the browser for authorization<br>3. Save the token to ~/.clasprc.json<br>4. Continue with fully automatic mode"]
+
+    AskMode -- "User wants to learn by hand" --> StepManual["[Manual beginner mode]<br>1. The AI creates the Google Sheet and sets up the headers<br>2. Provide single-file code with front and back end combined<br>3. Guide the student to paste it via Extensions ➔ Apps Script<br>4. Click Run to authorize, then Deploy ➔ Web app"]
 ```
 
 ---
 
-## 一、全自動模式操作手冊 (Agent API Automation)
+## 1. Fully automatic mode (Agent API automation)
 
-若 `~/.clasprc.json` 存在，AI 助手可直接在終端機執行 REST API 完成全自動發布：
+If `~/.clasprc.json` exists, the AI assistant can publish entirely from the terminal with the REST API:
 
-### 1. 取得 Access Token
+### 1. Get the access token
 ```powershell
 $clasp = Get-Content -Raw "$HOME\.clasprc.json" | ConvertFrom-Json
 $token = $clasp.token.access_token
 $headers = @{ Authorization = "Bearer $token" }
 ```
 
-### 2. 建立專案並綁定 Google Sheet
+### 2. Create the project and bind it to the Google Sheet
 ```powershell
 $body = '{"title":"' + $ProjectName + '","parentId":"' + $SpreadsheetId + '"}'
 $proj = Invoke-RestMethod -Uri "https://script.googleapis.com/v1/projects" -Method Post -Headers $headers -ContentType "application/json; charset=utf-8" -Body ([System.Text.Encoding]::UTF8.GetBytes($body))
 $scriptId = $proj.scriptId
 ```
 
-### 3. 上傳程式碼與 Web App 清單 (Manifest)
+### 3. Upload the code and the Web App manifest
 ```powershell
-# 將 Code.gs 與 appsscript.json 組合為 payload，呼叫 PUT
+# Combine Code.gs and appsscript.json into one payload, then call PUT
 PUT https://script.googleapis.com/v1/projects/$scriptId/content
 ```
-*註：`appsscript.json` 必須包含 `"webapp": { "executeAs": "USER_DEPLOYING", "access": "ANYONE_ANONYMOUS" }`*
+*Note: `appsscript.json` must contain `"webapp": { "executeAs": "USER_DEPLOYING", "access": "ANYONE_ANONYMOUS" }`*
 
-### 4. 發布公開 Web App
+### 4. Publish the public Web App
 ```powershell
-# 1. 建立 Version
+# 1. Create a version
 POST https://script.googleapis.com/v1/projects/$scriptId/versions -d '{"description":"v1"}'
-# 2. 建立 Deployment
-POST https://script.googleapis.com/v1/projects/$scriptId/deployments -d '{"versionNumber":1,"manifestFileName":"appsscript","description":"公開部署"}'
+# 2. Create a deployment
+POST https://script.googleapis.com/v1/projects/$scriptId/deployments -d '{"versionNumber":1,"manifestFileName":"appsscript","description":"Public deployment"}'
 ```
-API 回傳中的 `entryPoints[0].webApp.url` 即為公開打卡網址！
+`entryPoints[0].webApp.url` in the API response is the public clock-in URL!
 
 ---
 
-## 二、使用者首次授權 SOP (OAuth Handshake)
+## 2. First-time user authorization SOP (OAuth handshake)
 
-若尚未授權，AI 助手應依序執行：
-1. **提醒使用者檢查 API 開關**：
-   打開 [script.google.com/home/usersettings](https://script.google.com/home/usersettings) 確認「Google Apps Script API」已切換為「開啟 (ON)」。
-2. **啟動本機授權監聽**：
-   執行本技能隨附腳本 `scripts/gas_auth.ps1`，它會自動開啟瀏覽器引導使用者完成登入與授權，並自動將憑證儲存於 `~/.clasprc.json`。
+If the user has not authorized yet, the AI assistant should:
+1. **Remind the user to check the API switch**:
+   open [script.google.com/home/usersettings](https://script.google.com/home/usersettings) and make sure "Google Apps Script API" is turned **On**.
+2. **Start the local authorization listener**:
+   run the bundled script `scripts/gas_auth.ps1`. It opens the browser, walks the user through sign-in and consent, and saves the credentials to `~/.clasprc.json`.
 
 ---
 
-## 三、關鍵提醒：為什麼發布後還要使用者點一次「▷ 執行」？
+## 3. Key reminder: why does the user still need to click Run once after publishing?
 
 > [!IMPORTANT]
-> Google 的安全隔離機制：
-> 外部 API（即使擁有 `script.projects` 權限）只能上傳程式碼與建立部署，**不能越權代表使用者直接同意腳本對 Google Sheet 的讀寫權限**。
-> 因此，發布後 AI 必須清楚告知使用者：
-> **請在瀏覽器專案編輯器中，點擊一次「▷ 執行 (Run)」並允許權限。完成後，公開網頁才會正式對所有人開放！**
+> Google's security isolation:
+> An external API (even with the `script.projects` scope) can only upload code and create deployments. It **cannot consent on the user's behalf to the script reading and writing their Google Sheet**.
+> So after publishing, the AI must clearly tell the user:
+> **Open the project in the browser editor, click Run once and allow the permissions. Only then does the public web page open to everyone!**

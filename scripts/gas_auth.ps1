@@ -39,7 +39,7 @@ $code = $request.QueryString["code"]
 $error = $request.QueryString["error"]
 
 if ($code) {
-  $html = "<!DOCTYPE html><html><head><meta charset='utf-8'><title>授權成功</title></head><body style='font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center;padding:60px 20px;background:#f8fafc;'><div style='max-width:480px;margin:0 auto;background:#fff;padding:40px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.05);'><div style='font-size:48px;margin-bottom:16px;'>&#x2705;</div><h2 style='color:#0f172a;margin-bottom:12px;'>Google Apps Script 授權成功！</h2><p style='color:#64748b;line-height:1.6;'>請回到 AI 助理對話視窗，AI 將自動為您建立並發布打卡網頁！</p></div></body></html>"
+  $html = "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Authorization successful</title></head><body style='font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center;padding:60px 20px;background:#f8fafc;'><div style='max-width:480px;margin:0 auto;background:#fff;padding:40px;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,0.05);'><div style='font-size:48px;margin-bottom:16px;'>&#x2705;</div><h2 style='color:#0f172a;margin-bottom:12px;'>Google Apps Script authorized!</h2><p style='color:#64748b;line-height:1.6;'>Go back to the AI assistant chat. It will now create and publish your clock-in page automatically!</p></div></body></html>"
   $buffer = [System.Text.Encoding]::UTF8.GetBytes($html)
   $response.ContentLength64 = $buffer.Length
   $response.ContentType = "text/html; charset=utf-8"

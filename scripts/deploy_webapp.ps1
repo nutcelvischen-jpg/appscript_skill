@@ -40,12 +40,12 @@ Write-Host "4. Creating Version 1..."
 $verRes = curl.exe -s -X POST "https://script.googleapis.com/v1/projects/$scriptId/versions" `
   -H "Authorization: Bearer $accessToken" `
   -H "Content-Type: application/json; charset=utf-8" `
-  -d '{\"description\":\"打卡網頁發布版 v1\"}'
+  -d '{\"description\":\"Clock-in web app release v1\"}'
 
 Write-Host "Version result:" $verRes
 
 Write-Host "5. Creating Web App deployment..."
-$deployPayload = '{\"versionNumber\":1,\"manifestFileName\":\"appsscript\",\"description\":\"員工上班打卡系統公開部署\"}'
+$deployPayload = '{\"versionNumber\":1,\"manifestFileName\":\"appsscript\",\"description\":\"Staff clock-in public deployment\"}'
 $deployRes = curl.exe -s -X POST "https://script.googleapis.com/v1/projects/$scriptId/deployments" `
   -H "Authorization: Bearer $accessToken" `
   -H "Content-Type: application/json; charset=utf-8" `
